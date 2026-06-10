@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Tracker – FoodManage</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <a href="index.html" class="navbar-brand">
+      <div class="logo-icon"><i class="fa-solid fa-utensils"></i></div>
+      <span>Food<em>Manage</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="menu.html">Menu</a>
+      <a href="inventory.html" class="active">Inventory</a>
+      <a href="reports.html">Reports</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div class="hamburger" onclick="toggleMobile()"><span></span><span></span><span></span></div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="index.html">Home</a><a href="menu.html">Menu</a>
+    <a href="inventory.html" class="active">Inventory</a><a href="reports.html">Reports</a>
+    <a href="about.html">About</a><a href="contact.html">Contact</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <h1><i class="fa-solid fa-boxes-stacked"></i> Inventory Tracker</h1>
+    <p>Monitor ingredient stock levels and manage restock alerts</p>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+
+    <!-- Alert Banner -->
+    <div class="alert alert-warning alert-pulse" id="alertBanner">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span id="alertText"></span>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid" style="margin-bottom:1.5rem" id="kpiRow"></div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-bar">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="form-control" id="searchInput" placeholder="Search ingredients..." oninput="renderTable()" style="min-width:200px">
+        </div>
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setFilter('All',this)">All</button>
+          <button class="filter-tab" onclick="setFilter('ok',this)"><i class="fa-solid fa-circle" style="color:var(--success);font-size:0.6rem"></i> OK</button>
+          <button class="filter-tab" onclick="setFilter('low',this)"><i class="fa-solid fa-circle" style="color:var(--warning);font-size:0.6rem"></i> Low</button>
+          <button class="filter-tab" onclick="setFilter('critical',this)"><i class="fa-solid fa-circle" style="color:var(--danger);font-size:0.6rem"></i> Critical</button>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-accent" onclick="openModal()"><i class="fa-solid fa-plus"></i> Add Ingredient</button>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:1.2rem;margin-bottom:1rem;flex-wrap:wrap;font-size:0.82rem">
+      <span><i class="fa-solid fa-circle" style="color:var(--success)"></i> &nbsp;OK — above threshold</span>
+      <span><i class="fa-solid fa-circle" style="color:var(--warning)"></i> &nbsp;Low — near threshold</span>
+      <span><i class="fa-solid fa-circle" style="color:var(--danger)"></i> &nbsp;Critical — below threshold</span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table class="responsive-table">
+        <thead>
+          <tr>
+            <th>Ingredient</th>
+            <th>Category</th>
+            <th>Stock Level</th>
+            <th>Qty / Unit</th>
+            <th>Threshold</th>
+            <th>Supplier</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="invBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyMsg" style="display:none;text-align:center;padding:3rem;color:var(--muted)">
+      <i class="fa-solid fa-box-open" style="font-size:2rem;display:block;margin-bottom:0.8rem"></i>No items found.
+    </div>
+
+  </div>
+</section>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle"><i class="fa-solid fa-plus"></i> Add Ingredient</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label class="form-label">Ingredient Name *</label>
+          <input type="text" class="form-control" id="fName" placeholder="e.g. Rice" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category *</label>
+          <select class="form-control" id="fCat">
+            <option value="">Select...</option>
+            <option>Grains</option><option>Protein</option><option>Vegetables</option>
+            <option>Dairy</option><option>Spices</option><option>Beverages</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Quantity *</label>
+          <input type="number" class="form-control" id="fQty" min="0" placeholder="0" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit *</label>
+          <select class="form-control" id="fUnit">
+            <option>kg</option><option>g</option><option>L</option><option>ml</option>
+            <option>pcs</option><option>packs</option><option>boxes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Restock Threshold *</label>
+          <input type="number" class="form-control" id="fThresh" min="0" placeholder="0" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Supplier</label>
+          <input type="text" class="form-control" id="fSupplier" placeholder="e.g. Ahmad Trading">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-accent" onclick="saveItem()"><i class="fa-solid fa-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Stock Modal -->
+<div class="modal-overlay" id="updateOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-arrow-up"></i> Update Stock</h3>
+      <button class="modal-close" onclick="closeUpdate()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:1rem">Updating stock for: <strong id="updateName"></strong></p>
+      <div class="form-group">
+        <label class="form-label">New Quantity</label>
+        <input type="number" class="form-control" id="updateQty" min="0">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeUpdate()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmUpdate()"><i class="fa-solid fa-save"></i> Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="modal-overlay" id="deleteOverlay">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <h3 style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Delete</h3>
+      <button class="modal-close" onclick="closeDelete()">&times;</button>
+    </div>
+    <div class="modal-body"><p>Delete <strong id="deleteItemName"></strong>? This cannot be undone.</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeDelete()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()"><i class="fa-solid fa-trash"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo-text">Food<em>Manage</em></div>
+        <p>A web-based F&B management system for local Malaysian businesses. Built for BIW20303 Web Design, UTHM.</p>
+      </div>
+      <div class="footer-col"><h4>Quick Links</h4><ul><li><a href="index.html">Home</a></li><li><a href="menu.html">Menu</a></li><li><a href="inventory.html">Inventory</a></li><li><a href="reports.html">Reports</a></li></ul></div>
+      <div class="footer-col"><h4>Info</h4><ul><li><a href="about.html">About Us</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 FoodManage – UTHM FSKTM</span></div>
+  </div>
+</footer>
+
+<script>
+let inventory = [
+  {id:1,name:"Basmati Rice",cat:"Grains",qty:45,unit:"kg",thresh:10,supplier:"Kedai Runcit Ali"},
+  {id:2,name:"Chicken Breast",cat:"Protein",qty:8,unit:"kg",thresh:10,supplier:"Ayam Segar Sdn Bhd"},
+  {id:3,name:"Beef Slices",cat:"Protein",qty:3,unit:"kg",thresh:5,supplier:"Daging Premium KL"},
+  {id:4,name:"Yellow Noodles",cat:"Grains",qty:12,unit:"kg",thresh:5,supplier:"Mee Kilang Johor"},
+  {id:5,name:"Flat Rice Noodles",cat:"Grains",qty:9,unit:"kg",thresh:5,supplier:"Mee Kilang Johor"},
+  {id:6,name:"Coconut Milk",cat:"Dairy",qty:2,unit:"L",thresh:5,supplier:"Kedai Runcit Ali"},
+  {id:7,name:"Chilli Paste (Sambal)",cat:"Spices",qty:6,unit:"kg",thresh:3,supplier:"Rencah Sdn Bhd"},
+  {id:8,name:"Anchovies (Ikan Bilis)",cat:"Protein",qty:4,unit:"kg",thresh:2,supplier:"Kedai Ikan Kering"},
+  {id:9,name:"Pandan Leaves",cat:"Vegetables",qty:1,unit:"packs",thresh:3,supplier:"Pasar Tani Batu Pahat"},
+  {id:10,name:"Bean Sprouts",cat:"Vegetables",qty:7,unit:"kg",thresh:3,supplier:"Pasar Tani Batu Pahat"},
+  {id:11,name:"Milo Powder",cat:"Beverages",qty:5,unit:"kg",thresh:2,supplier:"Nestle Distributor"},
+  {id:12,name:"Evaporated Milk",cat:"Dairy",qty:24,unit:"pcs",thresh:12,supplier:"Nestle Distributor"},
+  {id:13,name:"Sugar",cat:"Other",qty:15,unit:"kg",thresh:5,supplier:"Kedai Runcit Ali"},
+  {id:14,name:"Cooking Oil",cat:"Other",qty:2,unit:"L",thresh:5,supplier:"Kedai Runcit Ali"},
+];
+let nextId=15, editId=null, updateId=null, deleteId=null, activeFilter='All';
+
+function getStatus(item) {
+  const ratio = item.qty / item.thresh;
+  if (item.qty <= 0) return 'critical';
+  if (ratio <= 1) return 'critical';
+  if (ratio <= 1.5) return 'low';
+  return 'ok';
+}
+function statusBadge(s) {
+  const map = {ok:'badge-success',low:'badge-warning',critical:'badge-danger'};
+  return `<span class="badge ${map[s]}">${s.charAt(0).toUpperCase()+s.slice(1)}</span>`;
+}
+function stockBar(item) {
+  const s = getStatus(item);
+  const pct = Math.min(100, Math.round((item.qty / (item.thresh * 2)) * 100));
+  return `<div class="stock-bar-wrap stock-${s}">
+    <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%"></div></div>
+    <span class="stock-label" style="color:var(--${s==='ok'?'success':s==='low'?'warning':'danger'})">${s.toUpperCase()}</span>
+  </div>`;
+}
+
+function renderKPIs() {
+  const total = inventory.length;
+  const ok   = inventory.filter(i=>getStatus(i)==='ok').length;
+  const low  = inventory.filter(i=>getStatus(i)==='low').length;
+  const crit = inventory.filter(i=>getStatus(i)==='critical').length;
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Total Ingredients</div><div class="kpi-value">${total}</div></div>
+    <div class="kpi-card success"><div class="kpi-label">Stock OK</div><div class="kpi-value" style="color:var(--success)">${ok}</div></div>
+    <div class="kpi-card warning"><div class="kpi-label">Low Stock</div><div class="kpi-value" style="color:var(--warning)">${low}</div></div>
+    <div class="kpi-card" style="border-left-color:var(--danger)"><div class="kpi-label">Critical</div><div class="kpi-value" style="color:var(--danger)">${crit}</div></div>
+  `;
+  const alerts = inventory.filter(i=>getStatus(i)!=='ok');
+  const banner = document.getElementById('alertBanner');
+  if (alerts.length) {
+    document.getElementById('alertText').textContent =
+      `⚠ ${alerts.length} ingredient${alerts.length>1?'s':''} need${alerts.length===1?'s':''} attention: ${alerts.map(i=>i.name).join(', ')}`;
+    banner.style.display='flex';
+  } else {
+    banner.style.display='none';
+  }
+}
+
+function renderTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let filtered = inventory.filter(i => {
+    const matchSearch = i.name.toLowerCase().includes(search) || i.cat.toLowerCase().includes(search);
+    const matchFilter = activeFilter==='All' || getStatus(i)===activeFilter;
+    return matchSearch && matchFilter;
+  });
+  const tbody = document.getElementById('invBody');
+  if (!filtered.length) { tbody.innerHTML=''; document.getElementById('emptyMsg').style.display='block'; return; }
+  document.getElementById('emptyMsg').style.display='none';
+  tbody.innerHTML = filtered.map(item=>`
+    <tr>
+      <td data-label="Ingredient"><strong style="font-family:var(--font-head)">${item.name}</strong></td>
+      <td data-label="Category"><span class="badge badge-info">${item.cat}</span></td>
+      <td data-label="Stock Level">${stockBar(item)}</td>
+      <td data-label="Qty / Unit"><strong>${item.qty}</strong> ${item.unit}</td>
+      <td data-label="Threshold">${item.thresh} ${item.unit}</td>
+      <td data-label="Supplier">${item.supplier||'—'}</td>
+      <td data-label="Actions">
+        <div class="table-actions">
+          <button class="btn btn-primary btn-sm" onclick="openUpdate(${item.id},'${item.name.replace(/'/g,"\\'")}',${item.qty})"><i class="fa-solid fa-arrow-up"></i> Update</button>
+          <button class="btn btn-outline btn-sm" onclick="openModal(${item.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-danger btn-sm" onclick="askDelete(${item.id},'${item.name.replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  renderKPIs();
+}
+
+function setFilter(f,btn){ activeFilter=f; document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); renderTable(); }
+
+function openModal(id=null){
+  editId=id;
+  const item = id ? inventory.find(i=>i.id===id) : null;
+  document.getElementById('modalTitle').innerHTML = item ? '<i class="fa-solid fa-pen"></i> Edit Ingredient' : '<i class="fa-solid fa-plus"></i> Add Ingredient';
+  document.getElementById('fName').value    = item?.name||'';
+  document.getElementById('fCat').value     = item?.cat||'';
+  document.getElementById('fQty').value     = item?.qty??'';
+  document.getElementById('fUnit').value    = item?.unit||'kg';
+  document.getElementById('fThresh').value  = item?.thresh??'';
+  document.getElementById('fSupplier').value= item?.supplier||'';
+  document.getElementById('modalOverlay').classList.add('active');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
+function saveItem(){
+  const name=document.getElementById('fName').value.trim();
+  const cat=document.getElementById('fCat').value;
+  const qty=parseFloat(document.getElementById('fQty').value);
+  const thresh=parseFloat(document.getElementById('fThresh').value);
+  if(!name||!cat||isNaN(qty)||isNaN(thresh)){ alert('Please fill all required fields.'); return; }
+  const entry={id:editId||nextId,name,cat,qty,unit:document.getElementById('fUnit').value,thresh,supplier:document.getElementById('fSupplier').value.trim()};
+  if(editId){ const idx=inventory.findIndex(i=>i.id===editId); inventory[idx]=entry; }
+  else{ inventory.push(entry); nextId++; }
+  closeModal(); renderTable();
+}
+
+function openUpdate(id,name,qty){ updateId=id; document.getElementById('updateName').textContent=name; document.getElementById('updateQty').value=qty; document.getElementById('updateOverlay').classList.add('active'); }
+function closeUpdate(){ document.getElementById('updateOverlay').classList.remove('active'); }
+function confirmUpdate(){ const qty=parseFloat(document.getElementById('updateQty').value); if(isNaN(qty)){ alert('Enter a valid quantity.'); return; } const idx=inventory.findIndex(i=>i.id===updateId); inventory[idx].qty=qty; closeUpdate(); renderTable(); }
+
+function askDelete(id,name){ deleteId=id; document.getElementById('deleteItemName').textContent=name; document.getElementById('deleteOverlay').classList.add('active'); }
+function closeDelete(){ document.getElementById('deleteOverlay').classList.remove('active'); }
+function confirmDelete(){ inventory=inventory.filter(i=>i.id!==deleteId); closeDelete(); renderTable(); }
+
+function toggleMobile(){ document.getElementById('mobileMenu').classList.toggle('open'); }
+
+renderTable();
+</script>
+</body>
+</html>

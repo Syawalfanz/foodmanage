@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports & Analytics – FoodManage</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .range-tabs { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .range-tab  { padding:0.45rem 1.1rem; border-radius:6px; font-family:var(--font-head); font-weight:600; font-size:0.85rem; border:1.5px solid var(--border); background:var(--white); cursor:pointer; transition:var(--transition); color:var(--muted); }
+    .range-tab:hover,.range-tab.active { background:var(--primary); color:var(--white); border-color:var(--primary); }
+    .top-table th { font-size:0.82rem; }
+    .rank-badge { width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:700;font-size:0.8rem; }
+    .rank-1 { background:var(--accent);color:var(--white); }
+    .rank-2 { background:#BDC3C7;color:var(--white); }
+    .rank-3 { background:#A04000;color:var(--white); }
+    .rank-n { background:var(--light);color:var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <a href="index.html" class="navbar-brand">
+      <div class="logo-icon"><i class="fa-solid fa-utensils"></i></div>
+      <span>Food<em>Manage</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="menu.html">Menu</a>
+      <a href="inventory.html">Inventory</a>
+      <a href="reports.html" class="active">Reports</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div class="hamburger" onclick="toggleMobile()"><span></span><span></span><span></span></div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="index.html">Home</a><a href="menu.html">Menu</a>
+    <a href="inventory.html">Inventory</a><a href="reports.html" class="active">Reports</a>
+    <a href="about.html">About</a><a href="contact.html">Contact</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <h1><i class="fa-solid fa-chart-bar"></i> Reports & Analytics</h1>
+    <p>Sales summaries, top sellers and stock usage at a glance</p>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+
+    <!-- Date Range Tabs -->
+    <div class="range-tabs">
+      <button class="range-tab active" onclick="setRange('week',this)">This Week</button>
+      <button class="range-tab" onclick="setRange('month',this)">This Month</button>
+      <button class="range-tab" onclick="setRange('quarter',this)">This Quarter</button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpiRow"></div>
+
+    <!-- Charts -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3><i class="fa-solid fa-chart-bar" style="color:var(--primary)"></i> Daily Revenue (RM)</h3>
+        <canvas id="revenueChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3><i class="fa-solid fa-chart-pie" style="color:var(--accent)"></i> Sales by Category</h3>
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Sellers -->
+    <div style="margin-bottom:2rem">
+      <h3 style="font-family:var(--font-head);margin-bottom:1rem;color:var(--primary)">
+        <i class="fa-solid fa-trophy" style="color:var(--accent)"></i> Top Selling Items
+      </h3>
+      <div class="table-wrapper">
+        <table class="top-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Item</th>
+              <th>Category</th>
+              <th>Qty Sold</th>
+              <th>Revenue (RM)</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody id="topBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Stock Usage -->
+    <div>
+      <h3 style="font-family:var(--font-head);margin-bottom:1rem;color:var(--primary)">
+        <i class="fa-solid fa-boxes-stacked" style="color:var(--secondary)"></i> Stock Usage Summary
+      </h3>
+      <div class="chart-card" style="padding:1.4rem">
+        <canvas id="stockChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo-text">Food<em>Manage</em></div>
+        <p>A web-based F&B management system for local Malaysian businesses. Built for BIW20303 Web Design, UTHM.</p>
+      </div>
+      <div class="footer-col"><h4>Quick Links</h4><ul><li><a href="index.html">Home</a></li><li><a href="menu.html">Menu</a></li><li><a href="inventory.html">Inventory</a></li><li><a href="reports.html">Reports</a></li></ul></div>
+      <div class="footer-col"><h4>Info</h4><ul><li><a href="about.html">About Us</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 FoodManage – UTHM FSKTM</span></div>
+  </div>
+</footer>
+
+<script>
+const datasets = {
+  week: {
+    labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+    revenue:[620,540,710,480,890,1120,975],
+    totalSales:5335, orders:287, avgOrder:18.59, topItem:'Nasi Lemak Ayam',
+    categories:{Rice:38,Noodles:27,Beverages:20,Desserts:9,Snacks:6},
+    topItems:[
+      {name:'Nasi Lemak Ayam',cat:'Rice',qty:84,rev:714.00},
+      {name:'Mee Goreng Mamak',cat:'Noodles',qty:71,rev:497.00},
+      {name:'Teh Tarik',cat:'Beverages',qty:145,rev:362.50},
+      {name:'Nasi Goreng Kampung',cat:'Rice',qty:58,rev:435.00},
+      {name:'Kuey Teow Goreng',cat:'Noodles',qty:49,rev:367.50},
+    ],
+    stockUsage:{labels:['Rice','Chicken','Noodles','Oil','Chilli Paste','Milk'],data:[42,18,24,8,11,15]},
+  },
+  month: {
+    labels:['W1','W2','W3','W4'],
+    revenue:[4820,5335,4990,5680],
+    totalSales:20825, orders:1142, avgOrder:18.23, topItem:'Nasi Lemak Ayam',
+    categories:{Rice:36,Noodles:29,Beverages:19,Desserts:10,Snacks:6},
+    topItems:[
+      {name:'Nasi Lemak Ayam',cat:'Rice',qty:342,rev:2907.00},
+      {name:'Teh Tarik',cat:'Beverages',qty:581,rev:1452.50},
+      {name:'Mee Goreng Mamak',cat:'Noodles',qty:278,rev:1946.00},
+      {name:'Nasi Goreng Kampung',cat:'Rice',qty:241,rev:1807.50},
+      {name:'Cendol',cat:'Desserts',qty:198,rev:792.00},
+    ],
+    stockUsage:{labels:['Rice','Chicken','Noodles','Oil','Chilli Paste','Milk'],data:[168,72,96,32,44,60]},
+  },
+  quarter: {
+    labels:['Jan','Feb','Mar'],
+    revenue:[19400,21600,20825],
+    totalSales:61825, orders:3398, avgOrder:18.19, topItem:'Nasi Lemak Ayam',
+    categories:{Rice:35,Noodles:28,Beverages:21,Desserts:10,Snacks:6},
+    topItems:[
+      {name:'Nasi Lemak Ayam',cat:'Rice',qty:1020,rev:8670.00},
+      {name:'Teh Tarik',cat:'Beverages',qty:1740,rev:4350.00},
+      {name:'Mee Goreng Mamak',cat:'Noodles',qty:834,rev:5838.00},
+      {name:'Nasi Goreng Kampung',cat:'Rice',qty:724,rev:5430.00},
+      {name:'Kuey Teow Goreng',cat:'Noodles',qty:612,rev:4590.00},
+    ],
+    stockUsage:{labels:['Rice','Chicken','Noodles','Oil','Chilli Paste','Milk'],data:[504,216,288,96,132,180]},
+  }
+};
+
+let activeRange = 'week';
+let revenueChart, categoryChart, stockChart;
+
+function setRange(range, btn) {
+  activeRange = range;
+  document.querySelectorAll('.range-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  updateAll();
+}
+
+function updateAll() {
+  const d = datasets[activeRange];
+  // KPIs
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Total Sales</div><div class="kpi-value">RM ${d.totalSales.toLocaleString()}</div><div class="kpi-sub">Period total</div></div>
+    <div class="kpi-card accent"><div class="kpi-label">Orders Served</div><div class="kpi-value">${d.orders.toLocaleString()}</div><div class="kpi-sub">Completed orders</div></div>
+    <div class="kpi-card success"><div class="kpi-label">Avg Order Value</div><div class="kpi-value">RM ${d.avgOrder.toFixed(2)}</div><div class="kpi-sub">Per order</div></div>
+    <div class="kpi-card warning"><div class="kpi-label">Top Item</div><div class="kpi-value" style="font-size:1.05rem">${d.topItem}</div><div class="kpi-sub">Best seller</div></div>
+  `;
+
+  // Revenue Chart
+  if (revenueChart) revenueChart.destroy();
+  revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Revenue (RM)',
+        data: d.revenue,
+        backgroundColor: 'rgba(27,79,114,0.75)',
+        borderColor: '#1B4F72',
+        borderWidth: 2,
+        borderRadius: 6,
+        hoverBackgroundColor: '#F39C12',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v=>'RM '+v } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Category Pie
+  if (categoryChart) categoryChart.destroy();
+  categoryChart = new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(d.categories),
+      datasets: [{
+        data: Object.values(d.categories),
+        backgroundColor: ['#1B4F72','#F39C12','#27AE60','#2E86C1','#E67E22'],
+        borderWidth: 2, borderColor: '#fff',
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { font: { family: 'Lato', size: 12 } } } }
+    }
+  });
+
+  // Top Sellers Table
+  document.getElementById('topBody').innerHTML = d.topItems.map((item,i)=>`
+    <tr>
+      <td><span class="rank-badge rank-${i<3?i+1:'n'}">${i+1}</span></td>
+      <td><strong style="font-family:var(--font-head)">${item.name}</strong></td>
+      <td><span class="badge badge-info">${item.cat}</span></td>
+      <td>${item.qty} pcs</td>
+      <td><strong style="color:var(--primary)">RM ${item.rev.toFixed(2)}</strong></td>
+      <td><span style="color:var(--success);font-weight:700"><i class="fa-solid fa-arrow-trend-up"></i> +${(Math.random()*15+3).toFixed(1)}%</span></td>
+    </tr>
+  `).join('');
+
+  // Stock Usage Bar
+  if (stockChart) stockChart.destroy();
+  stockChart = new Chart(document.getElementById('stockChart'), {
+    type: 'bar',
+    data: {
+      labels: d.stockUsage.labels,
+      datasets: [{
+        label: 'Units Used',
+        data: d.stockUsage.data,
+        backgroundColor: ['#1B4F72','#F39C12','#27AE60','#2E86C1','#E67E22','#8E44AD'],
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true }, y: { grid: { display: false } } }
+    }
+  });
+}
+
+function toggleMobile() { document.getElementById('mobileMenu').classList.toggle('open'); }
+
+updateAll();
+</script>
+</body>
+</html>
